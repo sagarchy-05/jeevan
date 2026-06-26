@@ -44,6 +44,30 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", ex.getMessage(), request);
     }
 
+    @ExceptionHandler(SlotAlreadyBookedException.class)
+    public ResponseEntity<ApiError> handleSlotTaken(SlotAlreadyBookedException ex,
+                                                    HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, "SLOT_ALREADY_BOOKED", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(PatientDoubleBookingException.class)
+    public ResponseEntity<ApiError> handleDoubleBooking(PatientDoubleBookingException ex,
+                                                        HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, "PATIENT_DOUBLE_BOOKING", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(DoctorNotAvailableException.class)
+    public ResponseEntity<ApiError> handleNotAvailable(DoctorNotAvailableException ex,
+                                                       HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "DOCTOR_NOT_AVAILABLE", ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(EmailNotVerifiedException.class)
+    public ResponseEntity<ApiError> handleNotVerified(EmailNotVerifiedException ex,
+                                                      HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, "EMAIL_NOT_VERIFIED", ex.getMessage(), request);
+    }
+
     @ExceptionHandler({MethodArgumentTypeMismatchException.class, MissingServletRequestParameterException.class})
     public ResponseEntity<ApiError> handleBadRequest(Exception ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, "BAD_REQUEST", ex.getMessage(), request);
