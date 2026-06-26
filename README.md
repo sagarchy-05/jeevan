@@ -26,7 +26,7 @@ jeevan/
 
 ```bash
 cp .env.example .env
-docker-compose up -d postgres rabbitmq mailhog
+docker compose up -d postgres rabbitmq mailhog
 ```
 
 | Service   | URL / Port                        |

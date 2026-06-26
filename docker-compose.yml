@@ -3,7 +3,7 @@
 # The application services (jeevan-core, jeevan-notifier, jeevan-web) are added
 # in a later step once they exist, along with depends_on health gating.
 #
-# Usage: cp .env.example .env && docker-compose up
+# Usage: cp .env.example .env && docker compose up
 
 services:
   postgres:
