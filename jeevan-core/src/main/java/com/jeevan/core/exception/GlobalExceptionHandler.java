@@ -62,6 +62,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "DOCTOR_NOT_AVAILABLE", ex.getMessage(), request);
     }
 
+    @ExceptionHandler(AppointmentNotCancellableException.class)
+    public ResponseEntity<ApiError> handleNotCancellable(AppointmentNotCancellableException ex,
+                                                         HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, "APPOINTMENT_NOT_CANCELLABLE", ex.getMessage(), request);
+    }
+
     @ExceptionHandler(EmailNotVerifiedException.class)
     public ResponseEntity<ApiError> handleNotVerified(EmailNotVerifiedException ex,
                                                       HttpServletRequest request) {

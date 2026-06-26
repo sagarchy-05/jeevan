@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 public interface AppointmentRepository extends JpaRepository<Appointment, Long> {
 
@@ -16,6 +17,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
                                                                 AppointmentStatus excludedStatus);
 
     List<Appointment> findByPatientIdOrderByStartTimeDesc(Long patientId);
+
+    Optional<Appointment> findByIdAndPatientId(Long id, Long patientId);
 
     /**
      * Whether the patient already holds a live appointment whose time range overlaps

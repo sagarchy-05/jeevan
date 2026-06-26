@@ -2,6 +2,7 @@ package com.jeevan.core.service;
 
 import com.jeevan.core.dto.request.BookAppointmentRequest;
 import com.jeevan.core.dto.response.AppointmentResponse;
+import com.jeevan.core.exception.AppointmentNotCancellableException;
 import com.jeevan.core.exception.EmailNotVerifiedException;
 import com.jeevan.core.exception.PatientDoubleBookingException;
 import com.jeevan.core.exception.ResourceNotFoundException;
@@ -100,6 +101,39 @@ public class AppointmentService {
                 .reason("booked")
                 .build());
 
+        return AppointmentResponse.from(appointment, doctor);
+    }
+
+    /**
+     * Cancels the patient's own appointment, but only before it starts. Sets status
+     * CANCELLED (which frees the slot for rebooking — the partial unique index and
+     * slot queries both ignore cancelled rows) and writes a history row. The
+     * {@code appointment.cancelled} event is published after commit in step 7.
+     */
+    @Transactional
+    public AppointmentResponse cancel(User patient, Long appointmentId) {
+        Appointment appointment = appointments.findByIdAndPatientId(appointmentId, patient.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment", appointmentId));
+
+        if (appointment.getAppointmentStatus() != AppointmentStatus.CONFIRMED) {
+            throw new AppointmentNotCancellableException("This appointment is already cancelled.");
+        }
+        if (!appointment.getStartTime().isAfter(Instant.now())) {
+            throw new AppointmentNotCancellableException(
+                    "An appointment can only be cancelled before it starts.");
+        }
+
+        appointment.setAppointmentStatus(AppointmentStatus.CANCELLED);
+        appointments.save(appointment);
+
+        history.save(AppointmentHistory.builder()
+                .appointmentId(appointment.getId())
+                .oldStatus(AppointmentStatus.CONFIRMED.name())
+                .newStatus(AppointmentStatus.CANCELLED.name())
+                .reason("cancelled by patient")
+                .build());
+
+        Doctor doctor = doctors.findById(appointment.getDoctorId()).orElse(null);
         return AppointmentResponse.from(appointment, doctor);
     }
 
