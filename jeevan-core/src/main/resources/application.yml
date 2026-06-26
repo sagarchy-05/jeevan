@@ -1,0 +1,49 @@
+spring:
+  application:
+    name: jeevan-core
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${POSTGRES_DB:jeevan}
+    username: ${POSTGRES_USER:jeevan}
+    password: ${POSTGRES_PASSWORD:jeevan}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_DEFAULT_USER:jeevan}
+    password: ${RABBITMQ_DEFAULT_PASS:jeevan}
+
+server:
+  port: 8080
+
+# Application-specific configuration (consumed in later build steps).
+jeevan:
+  clinic-timezone: ${CLINIC_TIMEZONE:Asia/Kolkata}
+  slot-length-minutes: ${SLOT_LENGTH_MINUTES:30}
+  booking-window-days: ${BOOKING_WINDOW_DAYS:30}
+  jwt:
+    secret: ${JWT_SECRET:change-me-to-a-long-random-secret-at-least-256-bits-long-0123456789}
+    expiry-minutes: ${JWT_EXPIRY_MINUTES:120}
+  rabbitmq:
+    exchange: ${RABBITMQ_EXCHANGE:jeevan.appointments}
+    notifier-queue: ${RABBITMQ_NOTIFIER_QUEUE:notifier.appointment-events}
+    core-queue: ${RABBITMQ_CORE_QUEUE:core.notification-events}
+    routing-keys:
+      appointment-booked: ${RK_APPOINTMENT_BOOKED:appointment.booked}
+      appointment-cancelled: ${RK_APPOINTMENT_CANCELLED:appointment.cancelled}
+      notification-sent: ${RK_NOTIFICATION_SENT:notification.sent}
+      verification-requested: ${RK_VERIFICATION_REQUESTED:verification.requested}
+  email:
+    verification-enabled: ${EMAIL_VERIFICATION_ENABLED:false}
+    verification-ttl-hours: ${EMAIL_VERIFICATION_TTL_HOURS:24}
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:http://localhost:5173}

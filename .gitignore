@@ -1,0 +1,28 @@
+# Working docs (not part of the deliverable repo)
+CLAUDE.md
+PLAN.md
+
+# Environment
+.env
+*.env
+!.env.example
+
+# Java / Maven (jeevan-core)
+**/target/
+*.class
+
+# Python (jeevan-notifier)
+**/__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Node (jeevan-web)
+**/node_modules/
+**/dist/
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
