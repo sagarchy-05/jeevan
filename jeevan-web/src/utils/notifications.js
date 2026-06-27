@@ -5,7 +5,7 @@
 export async function pollNotificationStatus(
   authedRequest,
   appointmentId,
-  { timeoutMs = 15000, intervalMs = 1000 } = {},
+  { timeoutMs = 15000, intervalMs = 500 } = {},
 ) {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {

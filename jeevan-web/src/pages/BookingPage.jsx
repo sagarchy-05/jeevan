@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { toDateParam } from '../utils/datetime'
 import { pollNotificationStatus } from '../utils/notifications'
-import { pace } from '../utils/pacing'
+import { pace, STEP_GAP_MS } from '../utils/pacing'
 
 export default function BookingPage() {
   const { id } = useParams()
@@ -63,7 +63,7 @@ export default function BookingPage() {
     if (!selectedSlot) return
     setProcessing(true)
     showToast('Initiating booking…', 'info')
-    await pace(700)
+    await pace(STEP_GAP_MS)
 
     let appointment
     try {
@@ -86,11 +86,16 @@ export default function BookingPage() {
       return
     }
 
-    showToast('Booking confirmed ✓', 'success')
-    await pace(700)
-    showToast('Sending confirmation…', 'info')
+    // Poll concurrently so the result is ready by the time we pace to the last toast
+    // (keeps all four toasts on one even rhythm).
+    const notificationResult = pollNotificationStatus(authedRequest, appointment.id)
 
-    const finalStatus = await pollNotificationStatus(authedRequest, appointment.id)
+    showToast('Booking confirmed ✓', 'success')
+    await pace(STEP_GAP_MS)
+    showToast('Sending confirmation…', 'info')
+    await pace(STEP_GAP_MS)
+
+    const finalStatus = await notificationResult
     if (finalStatus === 'SENT') {
       showToast('Confirmation sent ✓', 'success')
     } else if (finalStatus === 'FAILED') {
@@ -99,7 +104,7 @@ export default function BookingPage() {
       showToast('Still sending confirmation — see My Appointments.', 'info')
     }
 
-    await pace(900)
+    await pace(STEP_GAP_MS)
     setProcessing(false)
     navigate('/appointments')
   }

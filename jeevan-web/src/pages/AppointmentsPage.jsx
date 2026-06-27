@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { formatDateTime } from '../utils/datetime'
 import { pollNotificationStatus } from '../utils/notifications'
-import { pace } from '../utils/pacing'
+import { pace, STEP_GAP_MS } from '../utils/pacing'
 
 function notificationLabel(appointment) {
   const cancelled = appointment.appointmentStatus === 'CANCELLED'
@@ -56,7 +56,7 @@ export default function AppointmentsPage() {
     const appointmentId = confirmTarget.id
     setCancelling(true)
     showToast('Initiating cancellation…', 'info')
-    await pace(700)
+    await pace(STEP_GAP_MS)
 
     try {
       await authedRequest(`/appointments/${appointmentId}/cancel`, { method: 'POST' })
@@ -69,11 +69,15 @@ export default function AppointmentsPage() {
       return
     }
 
-    showToast('Appointment cancelled ✓', 'success')
-    await pace(700)
-    showToast('Sending cancellation…', 'info')
+    // Poll concurrently so the four toasts keep one even rhythm.
+    const notificationResult = pollNotificationStatus(authedRequest, appointmentId)
 
-    const finalStatus = await pollNotificationStatus(authedRequest, appointmentId)
+    showToast('Appointment cancelled ✓', 'success')
+    await pace(STEP_GAP_MS)
+    showToast('Sending cancellation…', 'info')
+    await pace(STEP_GAP_MS)
+
+    const finalStatus = await notificationResult
     if (finalStatus === 'SENT') {
       showToast('Cancellation sent ✓', 'success')
     } else if (finalStatus === 'FAILED') {
@@ -82,7 +86,7 @@ export default function AppointmentsPage() {
       showToast('Still sending cancellation…', 'info')
     }
 
-    await pace(700)
+    await pace(STEP_GAP_MS)
     setCancelling(false)
     setConfirmTarget(null)
     load()
