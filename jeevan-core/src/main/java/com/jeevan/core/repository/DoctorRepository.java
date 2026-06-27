@@ -23,8 +23,8 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
             select d from Doctor d
             where (:specialty is null or d.specialty = :specialty)
               and (:search is null
-                   or lower(d.name) like lower(concat('%', :search, '%'))
-                   or lower(d.specialty) like lower(concat('%', :search, '%')))
+                   or lower(d.name) like lower(concat('%', cast(:search as string), '%'))
+                   or lower(d.specialty) like lower(concat('%', cast(:search as string), '%')))
             """)
     Page<Doctor> search(@Param("specialty") String specialty,
                         @Param("search") String search,
