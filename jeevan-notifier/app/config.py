@@ -12,6 +12,9 @@ class Settings(BaseSettings):
 
     app_name: str = "jeevan-notifier"
 
+    # Timezone used to render human-friendly times in emails (matches the core clinic tz)
+    clinic_timezone: str = Field(default="Asia/Kolkata", alias="CLINIC_TIMEZONE")
+
     # RabbitMQ connection
     rabbitmq_host: str = Field(default="localhost", alias="RABBITMQ_HOST")
     rabbitmq_port: int = Field(default=5672, alias="RABBITMQ_PORT")

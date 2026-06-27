@@ -7,7 +7,9 @@ consumer can report status=FAILED.
 import logging
 import smtplib
 from dataclasses import dataclass
+from datetime import datetime
 from email.message import EmailMessage
+from zoneinfo import ZoneInfo
 
 from app.config import Settings, settings
 from app.schemas.events import AppointmentEvent, VerificationRequested
@@ -39,9 +41,12 @@ class NotificationService:
         subject = "Verify your Jeevan account"
         body = (
             f"Hi {event.full_name},\n\n"
-            f"Please verify your email to start booking appointments:\n"
-            f"{event.verification_link}\n\n"
-            f"This link expires at {event.expires_at.isoformat()}."
+            f"Welcome to Jeevan! Please confirm your email address to start booking "
+            f"appointments by opening the link below:\n\n"
+            f"    {event.verification_link}\n\n"
+            f"This link expires on {self._human_time(event.expires_at)}.\n\n"
+            f"If you didn't create a Jeevan account, you can safely ignore this email.\n\n"
+            f"— The Jeevan Team"
         )
         if self.config.email_enabled:
             self._send_email(event.email, subject, body)
@@ -50,18 +55,31 @@ class NotificationService:
         return NotificationOutcome("SENT", "LOG", f"Verification link logged for {event.email}")
 
     def _compose(self, event: AppointmentEvent) -> tuple[str, str]:
-        when = event.start_time.isoformat()
+        when = self._human_time(event.start_time)
         if event.event_type == "APPOINTMENT_CANCELLED":
             return (
-                f"Your appointment with {event.doctor_name} was cancelled",
-                f"Hi {event.patient_name}, your {event.specialty} appointment with "
-                f"{event.doctor_name} on {when} has been cancelled.",
+                f"Your appointment with {event.doctor_name} has been cancelled",
+                f"Hi {event.patient_name},\n\n"
+                f"Your {event.specialty} appointment with {event.doctor_name} on "
+                f"{when} has been cancelled.\n\n"
+                f"You can book a new time whenever you're ready from your Jeevan account.\n\n"
+                f"— The Jeevan Team",
             )
         return (
-            f"Appointment confirmed with {event.doctor_name}",
-            f"Hi {event.patient_name}, your {event.specialty} appointment with "
-            f"{event.doctor_name} is confirmed for {when}.",
+            f"Your appointment with {event.doctor_name} is confirmed",
+            f"Hi {event.patient_name},\n\n"
+            f"Your {event.specialty} appointment with {event.doctor_name} is confirmed for "
+            f"{when}.\n\n"
+            f"Need to make a change? You can cancel from your Jeevan account any time before "
+            f"the appointment starts.\n\n"
+            f"— The Jeevan Team",
         )
+
+    def _human_time(self, value: datetime) -> str:
+        """Render a UTC instant in the clinic timezone, e.g. 'Thursday, 2 July 2026 at 5:00 PM'."""
+        local = value.astimezone(ZoneInfo(self.config.clinic_timezone))
+        hour = local.strftime("%I").lstrip("0") or "12"
+        return f"{local.strftime('%A')}, {local.day} {local.strftime('%B %Y')} at {hour}:{local.strftime('%M %p')}"
 
     def _send_email(self, recipient: str, subject: str, body: str) -> None:
         message = EmailMessage()
