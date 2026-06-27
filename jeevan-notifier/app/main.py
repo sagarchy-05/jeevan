@@ -1,16 +1,34 @@
 """Jeevan notifier — FastAPI app.
 
-Step 1 scaffold: a health endpoint only. The RabbitMQ consumer (started on a
-background thread via a startup hook), the notification service, and the
-/notifications endpoint are added in later build steps.
+On startup it launches the blocking pika consumer on a daemon background thread
+(simpler than async for this scope); on shutdown it asks the consumer to stop.
 """
+import logging
+import threading
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
-from app.config import settings
+from app.api.routes import router
+from app.messaging.consumer import NotificationConsumer
 
-app = FastAPI(title="Jeevan Notifier", version="0.1.0")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s - %(message)s",
+)
 
 
-@app.get("/health")
-def health() -> dict:
-    return {"status": "ok", "service": settings.app_name}
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    consumer = NotificationConsumer()
+    thread = threading.Thread(target=consumer.run, name="notifier-consumer", daemon=True)
+    thread.start()
+    app.state.consumer = consumer
+    try:
+        yield
+    finally:
+        consumer.stop()
+
+
+app = FastAPI(title="Jeevan Notifier", version="0.1.0", lifespan=lifespan)
+app.include_router(router)
