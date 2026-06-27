@@ -76,8 +76,6 @@ export default function BookingPage() {
       if (err instanceof ApiError && err.code === 'SLOT_ALREADY_BOOKED') {
         showToast('That slot was just taken — pick another.', 'error')
         if (selectedDate) loadSlots(selectedDate)
-      } else if (err instanceof ApiError && err.code === 'EMAIL_NOT_VERIFIED') {
-        showToast('Please verify your email before booking.', 'error')
       } else if (err instanceof ApiError && err.status === 401) {
         navigate('/login')
       } else {

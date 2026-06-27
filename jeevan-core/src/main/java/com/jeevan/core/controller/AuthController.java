@@ -2,6 +2,7 @@ package com.jeevan.core.controller;
 
 import com.jeevan.core.dto.request.LoginRequest;
 import com.jeevan.core.dto.request.RegisterRequest;
+import com.jeevan.core.dto.request.ResendVerificationRequest;
 import com.jeevan.core.dto.response.AuthResponse;
 import com.jeevan.core.dto.response.MessageResponse;
 import com.jeevan.core.dto.response.UserResponse;
@@ -54,13 +55,11 @@ public class AuthController {
         return new MessageResponse("VERIFIED", "Your email has been verified.");
     }
 
-    /** Resend the verification email for the authenticated (possibly unverified) user. */
+    /** Resend a verification email by address — unauthenticated and enumeration-safe. */
     @PostMapping("/resend-verification")
-    public MessageResponse resendVerification(@AuthenticationPrincipal AppUserDetails principal) {
-        boolean sent = emailVerificationService.resend(principal.getId());
-        return sent
-                ? new MessageResponse("SENT", "Verification email sent. Please check your inbox.")
-                : new MessageResponse("ALREADY_VERIFIED", "Your email is already verified.");
+    public MessageResponse resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
+        emailVerificationService.resendByEmail(request.email());
+        return new MessageResponse("SENT", "If an account exists for that email, a verification link has been sent.");
     }
 }
 

@@ -21,8 +21,14 @@ export default function RegisterPage() {
     setFieldErrors({})
     setSubmitting(true)
     try {
-      await apiRequest('/auth/register', { method: 'POST', body: form })
-      // Smooth demo flow: auto-login with the same credentials.
+      const created = await apiRequest('/auth/register', { method: 'POST', body: form })
+      // If verification is enabled the account is unverified — can't log in yet.
+      if (!created.emailVerified) {
+        showToast('Account created — check your email to verify, then log in.', 'success')
+        navigate('/login', { replace: true })
+        return
+      }
+      // Log-only path: account is already verified, so log straight in.
       const res = await apiRequest('/auth/login', {
         method: 'POST',
         body: { email: form.email, password: form.password },

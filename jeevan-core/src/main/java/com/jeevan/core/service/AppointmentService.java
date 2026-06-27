@@ -5,7 +5,6 @@ import com.jeevan.core.dto.response.AppointmentResponse;
 import com.jeevan.core.event.AppointmentBookedEvent;
 import com.jeevan.core.event.AppointmentCancelledEvent;
 import com.jeevan.core.exception.AppointmentNotCancellableException;
-import com.jeevan.core.exception.EmailNotVerifiedException;
 import com.jeevan.core.exception.PatientDoubleBookingException;
 import com.jeevan.core.exception.ResourceNotFoundException;
 import com.jeevan.core.exception.SlotAlreadyBookedException;
@@ -20,7 +19,6 @@ import com.jeevan.core.repository.AppointmentRepository;
 import com.jeevan.core.repository.DoctorRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -43,20 +41,17 @@ public class AppointmentService {
     private final DoctorRepository doctors;
     private final SlotService slotService;
     private final ApplicationEventPublisher events;
-    private final boolean emailVerificationEnabled;
 
     public AppointmentService(AppointmentRepository appointments,
                               AppointmentHistoryRepository history,
                               DoctorRepository doctors,
                               SlotService slotService,
-                              ApplicationEventPublisher events,
-                              @Value("${jeevan.email.verification-enabled:false}") boolean emailVerificationEnabled) {
+                              ApplicationEventPublisher events) {
         this.appointments = appointments;
         this.history = history;
         this.doctors = doctors;
         this.slotService = slotService;
         this.events = events;
-        this.emailVerificationEnabled = emailVerificationEnabled;
     }
 
     /**
@@ -67,10 +62,6 @@ public class AppointmentService {
      */
     @Transactional
     public AppointmentResponse book(User patient, BookAppointmentRequest request) {
-        if (emailVerificationEnabled && !patient.isEmailVerified()) {
-            throw new EmailNotVerifiedException();
-        }
-
         // Lock first: any other booking transaction for this doctor now waits here.
         Doctor doctor = doctors.findByIdForUpdate(request.doctorId())
                 .orElseThrow(() -> new ResourceNotFoundException("Doctor", request.doctorId()));

@@ -1,6 +1,5 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import VerifyBanner from './VerifyBanner'
 
 export default function Layout() {
   const { isAuthenticated, user, logout } = useAuth()
@@ -55,7 +54,6 @@ export default function Layout() {
           </nav>
         </div>
       </header>
-      <VerifyBanner />
       <main className="mx-auto max-w-5xl px-4 py-6">
         <Outlet />
       </main>

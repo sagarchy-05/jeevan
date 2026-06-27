@@ -93,15 +93,17 @@ public class EmailVerificationService {
         users.save(user);
     }
 
-    /** @return true if a fresh verification email was sent; false if already verified (no-op). */
+    /**
+     * Resend by email — unauthenticated (so a login-blocked user can recover).
+     * Enumeration-safe: it never reveals whether the email exists or its state; the
+     * controller always returns a generic response. A no-op for unknown/verified emails.
+     */
     @Transactional
-    public boolean resend(Long userId) {
-        User user = users.findById(userId)
-                .orElseThrow(VerificationTokenInvalidException::new);
-        if (user.isEmailVerified()) {
-            return false;
-        }
-        issueAndPublish(user);
-        return true;
+    public void resendByEmail(String email) {
+        users.findByEmail(email).ifPresent(user -> {
+            if (!user.isEmailVerified()) {
+                issueAndPublish(user);
+            }
+        });
     }
 }

@@ -5,6 +5,7 @@ import com.jeevan.core.dto.request.RegisterRequest;
 import com.jeevan.core.dto.response.AuthResponse;
 import com.jeevan.core.dto.response.UserResponse;
 import com.jeevan.core.exception.EmailAlreadyExistsException;
+import com.jeevan.core.exception.EmailNotVerifiedException;
 import com.jeevan.core.exception.InvalidCredentialsException;
 import com.jeevan.core.model.User;
 import com.jeevan.core.model.enums.Role;
@@ -83,6 +84,11 @@ public class AuthService {
             throw new InvalidCredentialsException();
         }
         User user = ((AppUserDetails) authentication.getPrincipal()).getUser();
+        // Password checked first (wrong password -> 401); only a correct login by an
+        // unverified user reveals the unverified state (403), so no enumeration via login.
+        if (!user.isEmailVerified()) {
+            throw new EmailNotVerifiedException();
+        }
         String token = jwtService.generateToken(user);
         return new AuthResponse(token, "Bearer", jwtService.getExpiryMinutes(), UserResponse.from(user));
     }
