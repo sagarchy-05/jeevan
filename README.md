@@ -80,17 +80,20 @@ Tear down with `docker compose down` (add `-v` to also wipe the database volume)
 
 All config is env-driven; copy `.env.example` to `.env` and adjust. Notable flags:
 
-| Variable | Default | Effect |
-|----------|---------|--------|
-| `EMAIL_VERIFICATION_ENABLED` | `false` | When `true`, new users are created **unverified** and must verify their email before they can log in (§5a). |
-| `NOTIFIER_EMAIL_ENABLED` | `false` | When `true`, the worker sends real emails via MailHog; otherwise it logs notifications. |
+| Variable | `.env.example` | Effect |
+|----------|----------------|--------|
+| `EMAIL_VERIFICATION_ENABLED` | `true` | When `true`, new users are created **unverified** and must verify their email before they can log in (§5a). Falls back to `false` if unset. |
+| `NOTIFIER_EMAIL_ENABLED` | `true` | When `true`, the worker sends real emails via MailHog; otherwise it logs notifications. Falls back to `false` if unset. |
 | `VITE_DEMO_PACING` | `true` | Adds small gaps between booking/cancel toast steps so the event-driven flow is visible on localhost. |
 | `CLINIC_TIMEZONE` | `Asia/Kolkata` | Timezone availability is interpreted in (and emails are rendered in). |
 | `SLOT_LENGTH_MINUTES` / `BOOKING_WINDOW_DAYS` | `30` / `30` | Slot size and how far ahead booking is open. |
 
-To demo **email verification + real email**, set both `EMAIL_VERIFICATION_ENABLED=true`
-and `NOTIFIER_EMAIL_ENABLED=true`, then `docker compose up -d --build --force-recreate
-jeevan-core jeevan-notifier`. Register → verify via the link in MailHog → log in → book.
+`.env.example` ships with the **email-verification + real-email path on**, so out of the
+box a new user must verify before logging in: register → open the link in **MailHog**
+(http://localhost:8025) → log in → book. To run the simpler **log-only** path instead
+(auto-verified, no email), set `EMAIL_VERIFICATION_ENABLED=false` and
+`NOTIFIER_EMAIL_ENABLED=false`, then recreate core + notifier:
+`docker compose up -d --force-recreate jeevan-core jeevan-notifier`.
 
 ## ⭐ Bonus Features Implemented
 
