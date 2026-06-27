@@ -5,9 +5,8 @@ import Calendar from '../components/Calendar'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { toDateParam } from '../utils/datetime'
-
-const NOTIFICATION_POLL_TIMEOUT_MS = 15000
-const NOTIFICATION_POLL_INTERVAL_MS = 1000
+import { pollNotificationStatus } from '../utils/notifications'
+import { pace } from '../utils/pacing'
 
 export default function BookingPage() {
   const { id } = useParams()
@@ -60,25 +59,11 @@ export default function BookingPage() {
     loadSlots(date)
   }
 
-  /** Poll the appointment until its notification resolves (or we time out). */
-  const pollNotification = async (appointmentId) => {
-    const deadline = Date.now() + NOTIFICATION_POLL_TIMEOUT_MS
-    while (Date.now() < deadline) {
-      await new Promise((resolve) => setTimeout(resolve, NOTIFICATION_POLL_INTERVAL_MS))
-      try {
-        const appt = await authedRequest(`/appointments/${appointmentId}`)
-        if (appt.notificationStatus !== 'PENDING') return appt.notificationStatus
-      } catch {
-        /* keep polling */
-      }
-    }
-    return 'PENDING'
-  }
-
   const onBook = async () => {
     if (!selectedSlot) return
     setProcessing(true)
     showToast('Initiating booking…', 'info')
+    await pace(700)
 
     let appointment
     try {
@@ -102,9 +87,10 @@ export default function BookingPage() {
     }
 
     showToast('Booking confirmed ✓', 'success')
+    await pace(700)
     showToast('Sending confirmation…', 'info')
 
-    const finalStatus = await pollNotification(appointment.id)
+    const finalStatus = await pollNotificationStatus(authedRequest, appointment.id)
     if (finalStatus === 'SENT') {
       showToast('Confirmation sent ✓', 'success')
     } else if (finalStatus === 'FAILED') {
@@ -113,6 +99,7 @@ export default function BookingPage() {
       showToast('Still sending confirmation — see My Appointments.', 'info')
     }
 
+    await pace(900)
     setProcessing(false)
     navigate('/appointments')
   }
