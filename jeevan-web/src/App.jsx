@@ -6,6 +6,7 @@ import BookingPage from './pages/BookingPage'
 import DoctorsPage from './pages/DoctorsPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import VerifyPage from './pages/VerifyPage'
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Route index element={<Navigate to="/doctors" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/verify" element={<VerifyPage />} />
         <Route path="/doctors" element={<DoctorsPage />} />
         <Route
           path="/doctors/:id/book"

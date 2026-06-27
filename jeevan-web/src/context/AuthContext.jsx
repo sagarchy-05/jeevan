@@ -27,6 +27,14 @@ export function AuthProvider({ children }) {
     setUser(null)
   }, [])
 
+  /** Re-fetch the current user (e.g. after email verification) and update state. */
+  const refreshUser = useCallback(async () => {
+    const fresh = await apiRequest('/auth/me', { token: localStorage.getItem(TOKEN_KEY) })
+    localStorage.setItem(USER_KEY, JSON.stringify(fresh))
+    setUser(fresh)
+    return fresh
+  }, [])
+
   /** Authenticated request that clears the session on 401 / expired token. */
   const authedRequest = useCallback(
     async (path, options = {}) => {
@@ -44,7 +52,7 @@ export function AuthProvider({ children }) {
 
   return (
     <AuthContext.Provider
-      value={{ token, user, isAuthenticated: !!token, login, logout, authedRequest }}
+      value={{ token, user, isAuthenticated: !!token, login, logout, authedRequest, refreshUser }}
     >
       {children}
     </AuthContext.Provider>

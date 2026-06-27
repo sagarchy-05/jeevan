@@ -34,3 +34,18 @@ class NotificationSent(BaseModel):
     channel: str
     detail: str
     processed_at: datetime = Field(alias="processedAt")
+
+
+class VerificationRequested(BaseModel):
+    """Inbound verification.requested payload (core -> worker)."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    event_id: str = Field(alias="eventId")
+    event_type: str = Field(alias="eventType")
+    user_id: int = Field(alias="userId")
+    email: str
+    full_name: str = Field(alias="fullName")
+    verification_link: str = Field(alias="verificationLink")
+    expires_at: datetime = Field(alias="expiresAt")
+    occurred_at: datetime = Field(alias="occurredAt")

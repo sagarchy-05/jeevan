@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from email.message import EmailMessage
 
 from app.config import Settings, settings
-from app.schemas.events import AppointmentEvent
+from app.schemas.events import AppointmentEvent, VerificationRequested
 
 log = logging.getLogger(__name__)
 
@@ -34,6 +34,20 @@ class NotificationService:
             return NotificationOutcome("SENT", "EMAIL", f"Email sent to {recipient}")
         log.info("[NOTIFY] to=%s | %s", recipient, subject)
         return NotificationOutcome("SENT", "LOG", f"Notification logged for {recipient}")
+
+    def notify_verification(self, event: VerificationRequested) -> NotificationOutcome:
+        subject = "Verify your Jeevan account"
+        body = (
+            f"Hi {event.full_name},\n\n"
+            f"Please verify your email to start booking appointments:\n"
+            f"{event.verification_link}\n\n"
+            f"This link expires at {event.expires_at.isoformat()}."
+        )
+        if self.config.email_enabled:
+            self._send_email(event.email, subject, body)
+            return NotificationOutcome("SENT", "EMAIL", f"Verification email sent to {event.email}")
+        log.info("[VERIFY] to=%s | %s", event.email, event.verification_link)
+        return NotificationOutcome("SENT", "LOG", f"Verification link logged for {event.email}")
 
     def _compose(self, event: AppointmentEvent) -> tuple[str, str]:
         when = event.start_time.isoformat()

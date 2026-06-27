@@ -3,9 +3,11 @@ package com.jeevan.core.controller;
 import com.jeevan.core.dto.request.LoginRequest;
 import com.jeevan.core.dto.request.RegisterRequest;
 import com.jeevan.core.dto.response.AuthResponse;
+import com.jeevan.core.dto.response.MessageResponse;
 import com.jeevan.core.dto.response.UserResponse;
 import com.jeevan.core.security.AppUserDetails;
 import com.jeevan.core.service.AuthService;
+import com.jeevan.core.service.EmailVerificationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -21,9 +24,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final EmailVerificationService emailVerificationService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, EmailVerificationService emailVerificationService) {
         this.authService = authService;
+        this.emailVerificationService = emailVerificationService;
     }
 
     @PostMapping("/register")
@@ -41,4 +46,21 @@ public class AuthController {
     public UserResponse me(@AuthenticationPrincipal AppUserDetails principal) {
         return UserResponse.from(principal.getUser());
     }
+
+    /** Verify an email via the token from the verification link (enabled-path only). */
+    @GetMapping("/verify")
+    public MessageResponse verify(@RequestParam String token) {
+        emailVerificationService.verify(token);
+        return new MessageResponse("VERIFIED", "Your email has been verified.");
+    }
+
+    /** Resend the verification email for the authenticated (possibly unverified) user. */
+    @PostMapping("/resend-verification")
+    public MessageResponse resendVerification(@AuthenticationPrincipal AppUserDetails principal) {
+        boolean sent = emailVerificationService.resend(principal.getId());
+        return sent
+                ? new MessageResponse("SENT", "Verification email sent. Please check your inbox.")
+                : new MessageResponse("ALREADY_VERIFIED", "Your email is already verified.");
+    }
 }
+

@@ -15,7 +15,7 @@ import pika
 
 from app.config import settings
 from app.messaging.publisher import publish_notification_sent
-from app.schemas.events import AppointmentEvent, NotificationSent
+from app.schemas.events import AppointmentEvent, NotificationSent, VerificationRequested
 from app.services.notification_service import notification_service
 from app.store.notification_store import store
 
@@ -124,19 +124,18 @@ class NotificationConsumer:
                  event.event_type, event.appointment_id, outcome.status)
 
     def _handle_verification(self, data: dict) -> None:
-        # Real email send lands with the email-verification feature (step 11);
-        # for now just record receipt so the binding is exercised.
-        email = data.get("email")
-        log.info("Verification requested for %s (email send handled in the verification step)", email)
+        event = VerificationRequested.model_validate(data)
+        outcome = notification_service.notify_verification(event)
         store.add({
             "appointmentId": None,
             "eventType": "VERIFICATION_REQUESTED",
-            "recipient": email,
-            "status": "SENT",
-            "channel": "LOG",
-            "detail": "Verification event received",
+            "recipient": event.email,
+            "status": outcome.status,
+            "channel": outcome.channel,
+            "detail": outcome.detail,
             "processedAt": datetime.now(timezone.utc).isoformat(),
         })
+        log.info("Processed VERIFICATION_REQUESTED for %s -> %s", event.email, outcome.status)
 
     def _report_failure(self, channel, data: dict, error: str) -> None:
         appointment_id = data.get("appointmentId")

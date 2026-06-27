@@ -74,6 +74,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.FORBIDDEN, "EMAIL_NOT_VERIFIED", ex.getMessage(), request);
     }
 
+    @ExceptionHandler(VerificationTokenInvalidException.class)
+    public ResponseEntity<ApiError> handleTokenInvalid(VerificationTokenInvalidException ex,
+                                                       HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "VERIFICATION_TOKEN_INVALID", ex.getMessage(), request);
+    }
+
     @ExceptionHandler({MethodArgumentTypeMismatchException.class, MissingServletRequestParameterException.class})
     public ResponseEntity<ApiError> handleBadRequest(Exception ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, "BAD_REQUEST", ex.getMessage(), request);

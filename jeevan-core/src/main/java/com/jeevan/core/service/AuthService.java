@@ -11,7 +11,6 @@ import com.jeevan.core.model.enums.Role;
 import com.jeevan.core.repository.UserRepository;
 import com.jeevan.core.security.AppUserDetails;
 import com.jeevan.core.security.JwtService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,27 +27,29 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-    private final boolean emailVerificationEnabled;
+    private final EmailVerificationService emailVerificationService;
 
     public AuthService(UserRepository users,
                        PasswordEncoder passwordEncoder,
                        AuthenticationManager authenticationManager,
                        JwtService jwtService,
-                       @Value("${jeevan.email.verification-enabled:false}") boolean emailVerificationEnabled) {
+                       EmailVerificationService emailVerificationService) {
         this.users = users;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
-        this.emailVerificationEnabled = emailVerificationEnabled;
+        this.emailVerificationService = emailVerificationService;
     }
 
     /**
      * Creates a PATIENT account. When email verification is disabled (default
      * log-only path) the account is created already verified; when enabled it is
-     * created unverified (the token + verification event are wired in step 11).
+     * created unverified and a verification token is issued + emailed via the worker.
      */
     @Transactional
     public UserResponse register(RegisterRequest request) {
+        boolean verificationEnabled = emailVerificationService.isEnabled();
+
         if (users.existsByEmail(request.email())) {
             throw new EmailAlreadyExistsException(request.email());
         }
@@ -58,13 +59,17 @@ public class AuthService {
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .phone(request.phone())
                 .role(Role.PATIENT)
-                .emailVerified(!emailVerificationEnabled)
+                .emailVerified(!verificationEnabled)
                 .build();
         try {
             users.save(user);
         } catch (DataIntegrityViolationException e) {
             // Lost the race against a concurrent registration with the same email.
             throw new EmailAlreadyExistsException(request.email());
+        }
+
+        if (verificationEnabled) {
+            emailVerificationService.issueAndPublish(user);
         }
         return UserResponse.from(user);
     }

@@ -3,6 +3,7 @@ package com.jeevan.core.messaging;
 import com.jeevan.core.config.RabbitProperties;
 import com.jeevan.core.event.AppointmentBookedEvent;
 import com.jeevan.core.event.AppointmentCancelledEvent;
+import com.jeevan.core.event.VerificationRequestedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -41,6 +42,17 @@ public class EventPublisher {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onAppointmentCancelled(AppointmentCancelledEvent event) {
         send(props.routingKeys().appointmentCancelled(), event, event.appointmentId());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onVerificationRequested(VerificationRequestedEvent event) {
+        String routingKey = props.routingKeys().verificationRequested();
+        try {
+            rabbitTemplate.convertAndSend(props.exchange(), routingKey, event);
+            log.info("Published '{}' for user {}", routingKey, event.userId());
+        } catch (Exception e) {
+            log.error("Failed to publish '{}' for user {}: {}", routingKey, event.userId(), e.getMessage());
+        }
     }
 
     private void send(String routingKey, Object payload, Long appointmentId) {
