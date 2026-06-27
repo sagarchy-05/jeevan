@@ -138,3 +138,4 @@ jeevan/
 ├── jeevan-web/           # Vite + React + Tailwind frontend          (see its README)
 ├── docker-compose.yml    # all six services, with health gating
 └── .env.example          # copy to .env
+```
