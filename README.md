@@ -64,7 +64,7 @@ Tear down with `docker compose down` (add `-v` to also wipe the database volume)
 - **Booking Flow & Live Toasts:** ![Booking Flow](assets/booking-flow.png)
 - **My Appointments:** ![My Appointments](assets/my-appointments.png)
 - **Email Verification (MailHog):** ![Mailhog Inbox](assets/mailhog-inbox.png)
-- **Full Video Walkthrough:** <br> <video src="assets/demo.webm" controls="controls" width="100%"></video>
+- **Full Video Walkthrough:** [Watch the demo video](assets/demo.webm)
 
 ## The patient flow
 
