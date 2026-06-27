@@ -1,9 +1,9 @@
-# Jeevan — local stack.
-# Step 1: infrastructure services only (postgres, rabbitmq, mailhog).
-# The application services (jeevan-core, jeevan-notifier, jeevan-web) are added
-# in a later step once they exist, along with depends_on health gating.
+# Jeevan — full local stack. One command boots everything:
+#   cp .env.example .env && docker compose up --build
 #
-# Usage: cp .env.example .env && docker compose up
+# App services wait for postgres + rabbitmq to be healthy. Host hostnames for the
+# inter-service links are pinned here so they work regardless of the .env values
+# (which may use localhost for non-Docker local runs).
 
 services:
   postgres:
@@ -41,6 +41,44 @@ services:
     ports:
       - "1025:1025"     # SMTP
       - "8025:8025"     # web UI
+
+  jeevan-core:
+    build: ./jeevan-core
+    env_file: .env
+    environment:
+      DB_HOST: postgres
+      RABBITMQ_HOST: rabbitmq
+      MAIL_HOST: mailhog
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  jeevan-notifier:
+    build: ./jeevan-notifier
+    env_file: .env
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      MAIL_HOST: mailhog
+    ports:
+      - "8000:8000"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  jeevan-web:
+    build:
+      context: ./jeevan-web
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_DEMO_PACING: ${VITE_DEMO_PACING}
+    ports:
+      - "5173:80"
+    depends_on:
+      - jeevan-core
 
 volumes:
   pgdata:
