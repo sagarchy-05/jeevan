@@ -141,6 +141,9 @@ public class AppointmentService {
         }
 
         appointment.setAppointmentStatus(AppointmentStatus.CANCELLED);
+        // Restart the notification cycle so the cancellation notification round-trip
+        // is observable (PENDING -> SENT) rather than swallowed by the idempotency guard.
+        appointment.setNotificationStatus(NotificationStatus.PENDING);
         appointments.save(appointment);
 
         history.save(AppointmentHistory.builder()
