@@ -39,6 +39,12 @@ public class AppointmentController {
         return appointmentService.listForPatient(principal.getId());
     }
 
+    @GetMapping("/{id}")
+    public AppointmentResponse getOne(@AuthenticationPrincipal AppUserDetails principal,
+                                      @PathVariable Long id) {
+        return appointmentService.getForPatient(principal.getId(), id);
+    }
+
     @PostMapping("/{id}/cancel")
     public AppointmentResponse cancel(@AuthenticationPrincipal AppUserDetails principal,
                                       @PathVariable Long id) {

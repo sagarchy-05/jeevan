@@ -32,8 +32,9 @@ public class DoctorController {
     public PagedResponse<DoctorResponse> list(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "9") int size,
-            @RequestParam(required = false) String specialty) {
-        return doctorService.listDoctors(specialty, page, size);
+            @RequestParam(required = false) String specialty,
+            @RequestParam(required = false) String search) {
+        return doctorService.listDoctors(search, specialty, page, size);
     }
 
     @GetMapping("/specialties")

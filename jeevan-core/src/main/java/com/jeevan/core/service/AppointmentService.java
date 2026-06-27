@@ -167,6 +167,14 @@ public class AppointmentService {
     }
 
     @Transactional(readOnly = true)
+    public AppointmentResponse getForPatient(Long patientId, Long appointmentId) {
+        Appointment appointment = appointments.findByIdAndPatientId(appointmentId, patientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Appointment", appointmentId));
+        Doctor doctor = doctors.findById(appointment.getDoctorId()).orElse(null);
+        return AppointmentResponse.from(appointment, doctor);
+    }
+
+    @Transactional(readOnly = true)
     public List<AppointmentResponse> listForPatient(Long patientId) {
         List<Appointment> patientAppointments = appointments.findByPatientIdOrderByStartTimeDesc(patientId);
         if (patientAppointments.isEmpty()) {

@@ -33,15 +33,15 @@ public class DoctorService {
         this.availability = availability;
     }
 
-    public PagedResponse<DoctorResponse> listDoctors(String specialty, int page, int size) {
+    public PagedResponse<DoctorResponse> listDoctors(String search, String specialty, int page, int size) {
         int safePage = Math.max(page, 0);
         int safeSize = size < 1 ? DEFAULT_PAGE_SIZE : Math.min(size, MAX_PAGE_SIZE);
         Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by("name").ascending());
 
-        Page<Doctor> result = (specialty == null || specialty.isBlank())
-                ? doctors.findAll(pageable)
-                : doctors.findBySpecialty(specialty.trim(), pageable);
+        String specialtyFilter = (specialty == null || specialty.isBlank()) ? null : specialty.trim();
+        String searchTerm = (search == null || search.isBlank()) ? null : search.trim();
 
+        Page<Doctor> result = doctors.search(specialtyFilter, searchTerm, pageable);
         return PagedResponse.from(result.map(DoctorResponse::from));
     }
 

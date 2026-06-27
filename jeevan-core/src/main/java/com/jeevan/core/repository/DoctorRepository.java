@@ -14,7 +14,21 @@ import java.util.Optional;
 
 public interface DoctorRepository extends JpaRepository<Doctor, Long> {
 
-    Page<Doctor> findBySpecialty(String specialty, Pageable pageable);
+    /**
+     * Server-side doctor search. {@code specialty} (when present) is an exact filter;
+     * {@code search} (when present) matches name OR specialty, case-insensitive,
+     * substring. Either may be null.
+     */
+    @Query("""
+            select d from Doctor d
+            where (:specialty is null or d.specialty = :specialty)
+              and (:search is null
+                   or lower(d.name) like lower(concat('%', :search, '%'))
+                   or lower(d.specialty) like lower(concat('%', :search, '%')))
+            """)
+    Page<Doctor> search(@Param("specialty") String specialty,
+                        @Param("search") String search,
+                        Pageable pageable);
 
     @Query("select distinct d.specialty from Doctor d order by d.specialty")
     List<String> findDistinctSpecialties();

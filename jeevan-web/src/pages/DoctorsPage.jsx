@@ -9,6 +9,8 @@ const PAGE_SIZE = 9
 export default function DoctorsPage() {
   const [specialties, setSpecialties] = useState([])
   const [specialty, setSpecialty] = useState('')
+  const [searchInput, setSearchInput] = useState('')
+  const [search, setSearch] = useState('')
   const [page, setPage] = useState(0)
   const [data, setData] = useState({ content: [], totalPages: 0 })
   const [loading, setLoading] = useState(true)
@@ -24,15 +26,25 @@ export default function DoctorsPage() {
       })
   }, [])
 
+  // Debounce the search box so we don't fire a request per keystroke.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput.trim())
+      setPage(0)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchInput])
+
   useEffect(() => {
     setLoading(true)
     const query = new URLSearchParams({ page: String(page), size: String(PAGE_SIZE) })
     if (specialty) query.set('specialty', specialty)
+    if (search) query.set('search', search)
     apiRequest(`/doctors?${query.toString()}`)
       .then(setData)
       .catch(() => showToast('Could not load doctors.', 'error'))
       .finally(() => setLoading(false))
-  }, [page, specialty, showToast])
+  }, [page, specialty, search, showToast])
 
   const onSpecialtyChange = (value) => {
     setSpecialty(value)
@@ -41,8 +53,15 @@ export default function DoctorsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold text-slate-900">Find a doctor</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-slate-900">Find a doctor</h1>
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <input
+          type="search"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="Search by doctor name or specialty…"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-200 sm:flex-1"
+        />
         <select
           value={specialty}
           onChange={(e) => onSpecialtyChange(e.target.value)}
