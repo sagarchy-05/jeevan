@@ -2,6 +2,8 @@ package com.jeevan.core.service;
 
 import com.jeevan.core.dto.request.BookAppointmentRequest;
 import com.jeevan.core.dto.response.AppointmentResponse;
+import com.jeevan.core.event.AppointmentBookedEvent;
+import com.jeevan.core.event.AppointmentCancelledEvent;
 import com.jeevan.core.exception.AppointmentNotCancellableException;
 import com.jeevan.core.exception.EmailNotVerifiedException;
 import com.jeevan.core.exception.PatientDoubleBookingException;
@@ -17,6 +19,7 @@ import com.jeevan.core.repository.AppointmentHistoryRepository;
 import com.jeevan.core.repository.AppointmentRepository;
 import com.jeevan.core.repository.DoctorRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -34,17 +38,20 @@ public class AppointmentService {
     private final AppointmentHistoryRepository history;
     private final DoctorRepository doctors;
     private final SlotService slotService;
+    private final ApplicationEventPublisher events;
     private final boolean emailVerificationEnabled;
 
     public AppointmentService(AppointmentRepository appointments,
                               AppointmentHistoryRepository history,
                               DoctorRepository doctors,
                               SlotService slotService,
+                              ApplicationEventPublisher events,
                               @Value("${jeevan.email.verification-enabled:false}") boolean emailVerificationEnabled) {
         this.appointments = appointments;
         this.history = history;
         this.doctors = doctors;
         this.slotService = slotService;
+        this.events = events;
         this.emailVerificationEnabled = emailVerificationEnabled;
     }
 
@@ -101,6 +108,12 @@ public class AppointmentService {
                 .reason("booked")
                 .build());
 
+        events.publishEvent(new AppointmentBookedEvent(
+                UUID.randomUUID().toString(), "APPOINTMENT_BOOKED",
+                appointment.getId(), patient.getId(), patient.getEmail(), patient.getFullName(),
+                doctor.getId(), doctor.getName(), doctor.getSpecialty(),
+                appointment.getStartTime(), appointment.getEndTime(), Instant.now()));
+
         return AppointmentResponse.from(appointment, doctor);
     }
 
@@ -134,6 +147,15 @@ public class AppointmentService {
                 .build());
 
         Doctor doctor = doctors.findById(appointment.getDoctorId()).orElse(null);
+
+        events.publishEvent(new AppointmentCancelledEvent(
+                UUID.randomUUID().toString(), "APPOINTMENT_CANCELLED",
+                appointment.getId(), patient.getId(), patient.getEmail(), patient.getFullName(),
+                appointment.getDoctorId(),
+                doctor != null ? doctor.getName() : null,
+                doctor != null ? doctor.getSpecialty() : null,
+                appointment.getStartTime(), appointment.getEndTime(), Instant.now()));
+
         return AppointmentResponse.from(appointment, doctor);
     }
 
