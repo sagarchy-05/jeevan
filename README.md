@@ -56,6 +56,16 @@ docker compose up --build      # first run pulls Maven deps; give it a few minut
 
 Tear down with `docker compose down` (add `-v` to also wipe the database volume).
 
+## Application Previews
+
+*(Replace these placeholders with your actual screenshots or GIFs before submitting!)*
+
+- **Doctors Directory:** ![Doctors List](assets/doctors-list.png)
+- **Booking Flow & Live Toasts:** ![Booking Flow](assets/booking-flow.png)
+- **My Appointments:** ![My Appointments](assets/my-appointments.png)
+- **Email Verification (MailHog):** ![Mailhog Inbox](assets/mailhog-inbox.png)
+- **Full Video Walkthrough:** <br> <video src="assets/demo.webm" controls="controls" width="100%"></video>
+
 ## The patient flow
 
 1. **Register / log in.**
@@ -81,6 +91,13 @@ All config is env-driven; copy `.env.example` to `.env` and adjust. Notable flag
 To demo **email verification + real email**, set both `EMAIL_VERIFICATION_ENABLED=true`
 and `NOTIFIER_EMAIL_ENABLED=true`, then `docker compose up -d --build --force-recreate
 jeevan-core jeevan-notifier`. Register → verify via the link in MailHog → log in → book.
+
+## ⭐ Bonus Features Implemented
+
+To go beyond the baseline requirements, this project includes:
+1. **Real Async Email via MailHog:** The Python worker doesn't just log events; it actively sends real emails to a local SMTP catcher (MailHog) for both account verification and appointment confirmations.
+2. **Flyway Migrations:** The database schema is explicitly managed and version-controlled via Flyway, avoiding brittle `ddl-auto` Hibernate generation.
+3. **One-Command Boot (Docker Compose):** The entire 6-container stack (including infra) boots cleanly with a single command, using health-checks to ensure services wait for their dependencies.
 
 ## Correctness: no double-booking
 
@@ -121,10 +138,3 @@ jeevan/
 ├── jeevan-web/           # Vite + React + Tailwind frontend          (see its README)
 ├── docker-compose.yml    # all six services, with health gating
 └── .env.example          # copy to .env
-```
-
-## Out of scope (by decision)
-
-H2 (Postgres throughout), a `slots` table (slots are generated dynamically), doctor
-login / admin APIs, one-off availability exceptions, dead-letter/retry topologies,
-third-party email (MailHog only), caching, and rate limiting.
