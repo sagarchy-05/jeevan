@@ -1,10 +1,38 @@
+import { Navigate, Route, Routes } from 'react-router-dom'
+import Layout from './components/Layout'
+import ProtectedRoute from './components/ProtectedRoute'
+import AppointmentsPage from './pages/AppointmentsPage'
+import BookingPage from './pages/BookingPage'
+import DoctorsPage from './pages/DoctorsPage'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+
 export default function App() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50">
-      <div className="text-center">
-        <h1 className="text-3xl font-semibold text-slate-800">Jeevan</h1>
-        <p className="mt-2 text-slate-500">Healthcare appointment platform — coming soon.</p>
-      </div>
-    </div>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<Navigate to="/doctors" replace />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/doctors" element={<DoctorsPage />} />
+        <Route
+          path="/doctors/:id/book"
+          element={
+            <ProtectedRoute>
+              <BookingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/appointments"
+          element={
+            <ProtectedRoute>
+              <AppointmentsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/doctors" replace />} />
+      </Route>
+    </Routes>
   )
 }

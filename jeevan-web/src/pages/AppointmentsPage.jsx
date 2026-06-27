@@ -1,0 +1,106 @@
+import { useCallback, useEffect, useState } from 'react'
+import { ApiError } from '../api/client'
+import { useAuth } from '../context/AuthContext'
+import { useToast } from '../context/ToastContext'
+import { formatDateTime } from '../utils/datetime'
+
+function notificationLabel(appointment) {
+  const cancelled = appointment.appointmentStatus === 'CANCELLED'
+  switch (appointment.notificationStatus) {
+    case 'PENDING':
+      return cancelled ? 'Sending cancellation…' : 'Sending confirmation…'
+    case 'SENT':
+      return cancelled ? 'Cancellation sent ✓' : 'Confirmation sent ✓'
+    default:
+      return 'Notification failed'
+  }
+}
+
+export default function AppointmentsPage() {
+  const { authedRequest } = useAuth()
+  const { showToast } = useToast()
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const load = useCallback(async () => {
+    try {
+      const data = await authedRequest('/appointments')
+      setAppointments(data || [])
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 401)) {
+        showToast('Could not load appointments.', 'error')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }, [authedRequest, showToast])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  // Live notification status: poll while anything is still "Sending…".
+  useEffect(() => {
+    const anyPending = appointments.some((a) => a.notificationStatus === 'PENDING')
+    if (!anyPending) return undefined
+    const timer = setInterval(load, 3000)
+    return () => clearInterval(timer)
+  }, [appointments, load])
+
+  const onCancel = async (id) => {
+    try {
+      await authedRequest(`/appointments/${id}/cancel`, { method: 'POST' })
+      showToast('Appointment cancelled.', 'success')
+      load()
+    } catch (err) {
+      if (err instanceof ApiError && err.status !== 401) {
+        showToast(err.message || 'Could not cancel.', 'error')
+      }
+    }
+  }
+
+  if (loading) return <p className="text-sm text-slate-500">Loading…</p>
+
+  return (
+    <div>
+      <h1 className="mb-6 text-2xl font-semibold text-slate-900">My appointments</h1>
+      {appointments.length === 0 ? (
+        <p className="text-sm text-slate-500">You have no appointments yet.</p>
+      ) : (
+        <ul className="space-y-3">
+          {appointments.map((appt) => {
+            const cancelled = appt.appointmentStatus === 'CANCELLED'
+            const upcoming = new Date(appt.startTime) > new Date()
+            return (
+              <li key={appt.id} className="flex items-center justify-between rounded-lg border bg-white p-4">
+                <div>
+                  <p className="font-semibold text-slate-900">{appt.doctorName}</p>
+                  <p className="text-sm text-slate-500">{appt.specialty}</p>
+                  <p className="mt-1 text-sm text-slate-700">{formatDateTime(appt.startTime)}</p>
+                  <p className="mt-1 text-xs text-slate-400">{notificationLabel(appt)}</p>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      cancelled ? 'bg-slate-100 text-slate-500' : 'bg-emerald-100 text-emerald-700'
+                    }`}
+                  >
+                    {cancelled ? 'Cancelled' : 'Confirmed'}
+                  </span>
+                  {!cancelled && upcoming && (
+                    <button
+                      onClick={() => onCancel(appt.id)}
+                      className="rounded-md border border-red-300 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
+}
