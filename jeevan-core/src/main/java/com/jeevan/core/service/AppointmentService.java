@@ -18,6 +18,8 @@ import com.jeevan.core.model.enums.NotificationStatus;
 import com.jeevan.core.repository.AppointmentHistoryRepository;
 import com.jeevan.core.repository.AppointmentRepository;
 import com.jeevan.core.repository.DoctorRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -33,6 +35,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class AppointmentService {
+
+    private static final Logger log = LoggerFactory.getLogger(AppointmentService.class);
 
     private final AppointmentRepository appointments;
     private final AppointmentHistoryRepository history;
@@ -174,5 +178,37 @@ public class AppointmentService {
         return patientAppointments.stream()
                 .map(a -> AppointmentResponse.from(a, doctorsById.get(a.getDoctorId())))
                 .toList();
+    }
+
+    /**
+     * Applies a worker notification result to the appointment — the closing half of
+     * the round-trip. Idempotent: a duplicate delivery for an already-applied status
+     * is a no-op. Unknown appointment ids are logged and ignored (not retried).
+     */
+    @Transactional
+    public void applyNotificationResult(Long appointmentId, String status, String detail) {
+        Appointment appointment = appointments.findById(appointmentId).orElse(null);
+        if (appointment == null) {
+            log.warn("Received notification result for unknown appointment {}", appointmentId);
+            return;
+        }
+
+        NotificationStatus newStatus = "FAILED".equalsIgnoreCase(status)
+                ? NotificationStatus.FAILED
+                : NotificationStatus.SENT;
+        NotificationStatus oldStatus = appointment.getNotificationStatus();
+        if (oldStatus == newStatus) {
+            return;
+        }
+
+        appointment.setNotificationStatus(newStatus);
+        appointments.save(appointment);
+
+        history.save(AppointmentHistory.builder()
+                .appointmentId(appointment.getId())
+                .oldStatus(oldStatus.name())
+                .newStatus(newStatus.name())
+                .reason(newStatus == NotificationStatus.SENT ? "notification sent" : "notification failed")
+                .build());
     }
 }
