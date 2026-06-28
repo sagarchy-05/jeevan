@@ -58,8 +58,6 @@ Tear down with `docker compose down` (add `-v` to also wipe the database volume)
 
 ## Application Previews
 
-*(Replace these placeholders with your actual screenshots or GIFs before submitting!)*
-
 - **Doctors Directory:** ![Doctors List](assets/doctors-list.png)
 - **Booking Flow & Live Toasts:** ![Booking Flow](assets/booking-flow.png)
 - **My Appointments:** ![My Appointments](assets/my-appointments.png)
